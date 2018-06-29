@@ -10,5 +10,7 @@
 
 ## 記録
 
+github.ioは[こちら](https://nonsabotage.github.io/RStudio4RUser/)から
+
 - [第01章：RStudioの基本操作](chp01.html)
 
