@@ -1,0 +1,98 @@
+---
+title: "RStudioの基礎"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        theme: flatly
+        css: mycss.css
+        code_folding: hide
+        include:
+            - in_header: in_head.html
+---
+
+```{r setup, message=FALSE}
+libs <- c("bench", "tidyverse")
+for (lib in libs) 
+  require(lib, character.only = TRUE)
+```
+
+
+# RStudioの基本操作
+
+## ペイン
+
+Envrionmentペインを活用することで,　
+各種オブジェクトの構造がＧＵＩで確認することが可能となる.
+これは関数についても同様である.
+
+```{r}
+tashizan <- function (a, b) {
+  if ((class(a) == "numeric") == FALSE | (class(b) == "numeric") == FALSE) {
+    stop("数値を入力してください")
+  }
+  a + b
+}
+```
+
+
+## 入力補完
+
+関数名やオブジェクト名は補完されるので,
+→コマンドで移動してTABで確定.
+
+補完機能はコードにもあり, コードスニペットと呼ばれる. 
+例えばforと入力すると, forループの構文が補完候補に現れる. 
+スニペットだと変数部分にTABで移動することができるので, 
+入力間違いを減らすことができる. 
+
+```{r}
+for (i in 1:10) {
+  print(i)
+}
+```
+
+コードスニペットは登録するこことも可能である. 
+[Tools]→[Global Options...]→[Code]ダイアログから, 
+[Edit Snippets]ボタンを押すと登録されているスニペットの一覧が表示される.
+
+
+# データの読み込み
+
+基本関数群を使うと次の2点が問題になる. 
+
+- ファイルサイズが大きい場合に, 読み込みが遅い
+- 読み込み時の型が分析しづらい
+
+試して見る. 
+
+```{r cache=TRUE}
+# サンプルデータのダウンロード
+SAMPLE_DATA_URL <- "https://raw.githubusercontent.com/ymattu/SampleData/master/csv/Sales.csv"
+DOWNLOAD_DIR <- "dat"
+dir.create( DOWNLOAD_DIR, showWarnings = FALSE )
+sample_data <- file.path( DOWNLOAD_DIR, basename( SAMPLE_DATA_URL ) )
+if (!file.exists(sample_data)) {
+  download.file(
+    SAMPLE_DATA_URL,
+    sample_data, 
+    mode = "wb", 
+    method = "curl"
+  )
+}
+
+## 読み込み速度の比較
+## 確かに3倍程度違うようだ
+ret <- bench::mark(
+  read.csv( sample_data ), 
+  read_csv( sample_data ), 
+  check = FALSE
+)
+
+ret
+```
+
+
+
+
