@@ -13,9 +13,10 @@ output:
 ---
 
 ```{r setup, message=FALSE}
-libs <- c("bench", "tidyverse")
+libs <- c("bench", "tidyverse", "yaml")
 for (lib in libs) 
   require(lib, character.only = TRUE)
+config <- read_yaml( "config.yaml" )
 ```
 
 
@@ -70,7 +71,7 @@ for (i in 1:10) {
 ```{r cache=TRUE}
 # サンプルデータのダウンロード
 SAMPLE_DATA_URL <- "https://raw.githubusercontent.com/ymattu/SampleData/master/csv/Sales.csv"
-DOWNLOAD_DIR <- "dat"
+DOWNLOAD_DIR <- pluck( config, "DOWNLOAD_DIR" )
 dir.create( DOWNLOAD_DIR, showWarnings = FALSE )
 sample_data <- file.path( DOWNLOAD_DIR, basename( SAMPLE_DATA_URL ) )
 if (!file.exists(sample_data)) {

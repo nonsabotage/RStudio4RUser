@@ -1,0 +1,146 @@
+---
+title: "スクレイピングによるデータ収集"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        theme: flatly
+        css: mycss.css
+        code_folding: hide
+        include:
+            - in_header: in_head.html
+---
+
+```{r setup, message=FALSE}
+libs <- c("bench", "tidyverse", "yaml", "rvest")
+for (lib in libs) 
+  require(lib, character.only = TRUE)
+config <- read_yaml( "config.yaml" )
+```
+
+
+# Rによるスクレイピング入門
+
+## Webページのタイトルを取得
+
+**read_html**はHTMLドキュメントをDOM構造に
+返還をしているらしい.
+
+```{r}
+# HTMLをDOM変換
+kabu_url <- "https://kabutan.jp/stock/kabuka?code=0000"
+url_res <- read_html(kabu_url)
+url_res
+```
+
+DOMの説明で次のような文章があったが, 
+「樹木のような階層構造」っていう言い方は通常通じるものなのだろうか?
+樹木と構造がリンクするような知識の方には不要だし, 
+はじめてHTMLを見る人には意味がわからない気がする. 
+
+> DOMとは、HTMLの要素をを樹木のような階層構造に変換した者です. 
+
+読み込んだDOMからタイトルを抽出する. 
+
+
+```{r}
+# 本ではCSSセレクタが, html > head > titleになっている
+url_title <- html_nodes(url_res, css = "head > title")
+url_title
+```
+
+抽出したタイトル要素から中身を抽出. 
+
+```{r}
+title <- html_text(url_title)
+title
+```
+
+一連の処理をパイプで記述すると次のようになる. 
+
+```{r}
+title2 <- 
+  kabu_url %>% 
+  read_html() %>% 
+  html_nodes(css = "head > title") %>% 
+  html_text()
+title2
+
+
+
+```
+
+# スクレイピング実践
+
+表を直接読み込む. 
+XPathはChoromのデベロッパーツールから, 要素を右クリックすることで, 
+Copy→Copy XPathを実行した結果を貼り付ける
+
+```{r}
+kabuka <- 
+  kabu_url %>%
+  read_html() %>%
+  html_node(xpath = '//*[@id="stock_kabuka_table"]/table[2]') %>%
+  html_table()
+
+head(kabuka)
+```
+
+
+## 複数のページから取得
+
+複数ページにわたる表のアドレスをURLから推定し, 
+そのURLに対してスクレイピングをする. 
+
+```{r cache=TRUE}
+# アロケート
+urls <- NULL
+kabukas <- list()
+
+# ベージ番号抜きのURLを用意
+base_url <- "https://kabutan.jp/stock/kabuka?code=0000&ashi=day&page="
+
+# ページ1~5に対して処理をする
+for (i in 1:5) {
+  pgnum <- as.character(i)
+  urls[i] <- paste0(base_url, pgnum)
+  
+  kabukas[[i]] <- read_html(urls[i]) %>%
+    html_node(xpath = '//*[@id="stock_kabuka_table"]/table[2]') %>% 
+    html_table() %>% 
+    dplyr::mutate_at("前日比", as.character)
+  
+  Sys.sleep(1)
+}
+
+dat <- dplyr::bind_rows(kabukas)
+
+
+```
+
+
+
+# ブラウザの自動取得
+
+e-Statの小地域境界(シェープファイル)が
+逆ジオコーディングに使われているわしい??
+逆ジオコーディングにそんなめんどくさいことをしているのか?
+というか, 小地域統計境界がシェープファイルと呼ばれているわけでは
+ないのでないか?
+
+といーか, RSeleniumがインストールできなかったので, 
+今回は諦める. 
+
+いつも思うのだけど, Rでスクレイピング系は再現できないことが多いので, 
+Pythonに任せた方が良いと思う...
+
+
+
+
+
+
+
+
+
+
