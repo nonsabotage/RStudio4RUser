@@ -10,7 +10,6 @@
 
 ## 記録
 
-github.ioは[こちら](https://nonsabotage.github.io/RStudio4RUser/)から
 
 - [第01章：RStudioの基本](chp01.html)
 - [第02章：スクレイピングによるデータ収集](chp02.html)
