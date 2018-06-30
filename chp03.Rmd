@@ -1,0 +1,279 @@
+---
+title: "dplyr/tidyrによるデータ前処理"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        theme: flatly
+        css: mycss.css
+        code_folding: hide
+        include:
+            - in_header: in_head.html
+---
+
+```{r setup, message=FALSE}
+libs <- c("bench", "tidyverse", "yaml", "rvest")
+for (lib in libs) 
+  require(lib, character.only = TRUE)
+config <- read_yaml( "config.yaml" )
+```
+
+
+# tidy data
+
+## tidy dataの定義
+
+1. 1つの列が1つの変数を表す
+2. 1つの行が1つの観測を表す
+3. 1つのテーブルが1つのデータセットだけを含む
+
+1つの観測を表すというのは, 1行において, 観測値は1つしか
+含めないという意味らしい. 
+
+
+
+# tidyrによるtidy dataへの変形
+
+横長のデータを縦長に変換することが最初の一歩. 
+
+```{r}
+# 横長のデータ
+scores_messy <- data.frame(
+  名前 = c("生徒A", "生徒B"), 
+  算数 = c( 100, 100), 
+  国語 = c( 80, 100), 
+  理科 = c( 60, 100),
+  社会 = c( 40, 20),
+  stringsAsFactors = FALSE # 文字列が因子型に変換されないようにする
+)
+knitr::kable(scores_messy)
+
+```
+
+gatherで変換をしてみる.
+
+
+```{r}
+scores_tidy <- 
+  gather(
+    scores_messy, key = "教科", value = "点数", 
+    算数, 国語, 理科, 社会
+  )
+knitr::kable(scores_tidy)
+```
+
+
+今度は縦長を横長に直す. 
+
+```{r}
+scores_tidy %>%
+  spread(教科, 点数)
+
+
+```
+
+
+# dplyr
+
+一部の関数は現在開発が進められているvctrパッケージに
+統合される予定らしい.
+
+select関数は列名を変えながら列を絞ることができるらしい. 
+
+```{r}
+iris %>%
+  select( A = Sepal.Length, B = Species) %>%
+  head()
+```
+
+
+transmuteを使うことで, 新しく作成する列だけを返すことができる. 
+
+
+```{r}
+iris %>% 
+  transmute(Sepal.Length.Ceil = ceiling(Sepal.Length)) %>% 
+  head()
+```
+
+
+グループ化されたデータフレームであるgrouped_dfには
+filterやarrange等もあてがうことができる. 
+
+
+```{r}
+grouped_iris <- iris %>% group_by (Species)
+grouped_iris
+
+
+# filter
+grouped_iris %>%
+  filter(Sepal.Length > 7) %>%
+  arrange(Sepal.Length) %>%
+  knitr::kable()
+
+
+```
+
+## ウィンドウ関数
+
+lag関数を使うと, 差分が計算しやすい.
+
+```{r}
+uriage <- tibble(
+  day = c( 1, 1, 2, 2, 3, 3, 4, 4), # 日付
+  store = c( "a", "b", "a", "b", "a", "b", "a", "b"), # 店舗ID
+  sales = c( 100, 500, 200, 500, 400, 500, 800, 500) # 売上額
+)
+
+uriage %>%
+  group_by(store) %>%
+  mutate(sales_diff = sales - lag(sales, 1))
+```
+
+
+## mutateのセマンティクスとselectのセマンティクス
+
+dplyrの関数では一見すべてが同じ記法で記述できるようにみえるが
+実はmutate系のセマンティクスと, select系のセマンティクスが
+ある. 
+
+
+#### mutateのセマンティクス
+mutate(), transmute(), filter(), summarise(), arrange(), 
+group_by(), distinct()
+
+#### selectのセマンティクス
+select(), rename(), pull(), gather()
+
+
+一言でいえば, mutateは引数をベクトルとして解釈するが, 
+select系では引数は列の名前や位置を示すものである
+実用的には前者は列を文字列で渡すことはできない(?)が, 
+後者は文字列で操作が可能となる. 
+
+
+```{r}
+# こちらはエラー
+try({
+  mpg %>%
+  mutate(cyl2 = sqrt("cyl")) %>%
+  head()
+})
+
+# こちらは大ジョブ
+mpg %>%
+  select("cyl") %>% 
+  head()
+
+```
+
+mutateのセマンティクスで文字列から列名を使いたい場合には, 
+tidyvalと呼ばれる仕組みを駆使する必要がある. 
+ここではその例だけに限ります. 
+
+```{r}
+col <- sym("cyl")
+mpg %>%
+  mutate(cyl2 = sqrt(UQ(col)))
+```
+
+上のスクリプトがどのように評価されたのかは, 
+rlangパッケージを利用することで確認できる. 
+
+
+
+```{r}
+rlang::expr(
+  mpg %>%
+  mutate(cyl2 = sqrt(UQ(col)))
+)
+```
+
+selectのセマンティクスにおいてもtidyvalはしばしば必要になる. 
+例えば文字列で保持した列名を使い列を選択するときに, 
+保持している変数名がもとのデータフレームに含まれている場合には
+その変数名の列が選択されてしまうが, それを避ける場合. 
+
+
+```{r}
+cyl <- c("manufacturer", "year")
+
+mpg %>%
+  head() %>%
+  select(cyl) # cylが選択される
+```
+
+
+```{r}
+mpg %>%
+  head() %>%
+  select(one_of(cyl))
+```
+
+```{r}
+mpg %>%
+  head() %>%
+  select(UQ(cyl))
+```
+
+```{r}
+rlang::expr(
+  mpg %>%
+  head() %>%
+  select(UQ(cyl))
+)
+```
+
+
+詳しくは[programing with dplyr](https://dplyr.tidyverse.org/articles/programming.html)というvignetteを見て欲しいとのこと. というか読むべきだわこれは... 
+`絶対読もう`...
+
+
+## scoped function 
+
+tidy dataに変換できないようなデータの場合は, 
+複数の列を同時に処理する`scoped function`を活用する. 
+scoped functionは_at, _all, _ifといったサフィックスを付けたdplyrの関数群で, 
+filter, arrange, select, mutate, summarise, group_byに用意されている. 
+
+```{r}
+d <- 
+  data_frame(
+    a = rnorm(10), 
+    b = rnorm(10), 
+    c = rnorm(10)
+  )
+
+d %>%
+  mutate_all(funs(round, ceiling, floor))
+
+```
+
+
+```{r}
+d %>%
+  mutate_if( is.numeric, funs(round) )
+```
+
+
+```{r}
+# varsを使うと, selectのセマンティックも使える
+d %>%
+  mutate_at(vars(-a, b:c), round)
+```
+
+# dplyrによる2つのデータセットの結合と絞り込み
+
+特に目新しいことはなかった
+
+
+
+
+
+
+
+
+
+
