@@ -194,4 +194,16 @@ pre code {
   border: 0;
 }
 
+ul.tocify-header, ul.tocify-subheader {
+  font-size: 13px;
+}
+li.list-group-item.active {
+  background-color: #F26964;
+}
+li.list-group-item.active:hover {
+  background-color: #F26964;
+}
+
+
+
 
