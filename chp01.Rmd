@@ -8,6 +8,7 @@ output:
         theme: flatly
         css: mycss.css
         code_folding: hide
+        df_print: "paged"
         include:
             - in_header: in_head.html
 ---

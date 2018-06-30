@@ -1,0 +1,40 @@
+---
+title: "RMarkdownによるレポート生成"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        theme: flatly
+        css: mycss.css
+        code_folding: hide
+        df_print: "paged"
+        include:
+            - in_header: in_head.html
+
+---
+
+```{r setup, message=FALSE}
+libs <- c("bench", "tidyverse", "yaml", "rvest")
+for (lib in libs) 
+  require(lib, character.only = TRUE)
+config <- read_yaml( "config.yaml" )
+```
+
+# R Markdown
+
+## 基本文法
+
+### コードブロック
+
+\`を使えば文章中に`i=i++`コードブロックを差し込みことができ, 
+文字を際立たせることが可能となる. 
+
+### チャンクラベルとチャンクオプション
+
+Rチャンクの基本構造は以下のとおり.
+チャンクラベルが省略された場合には, 通し番号が自動で振られる. 
+
+\`\`\`\{r チャンクラベル, チャンクオプション\} 
+
+
