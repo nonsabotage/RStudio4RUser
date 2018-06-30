@@ -135,9 +135,26 @@ e-Statの小地域境界(シェープファイル)が
 いつも思うのだけど, Rでスクレイピング系は再現できないことが多いので, 
 Pythonに任せた方が良いと思う...
 
+...と思ってたけど, サポートページで更新されていた.
 
+## インストール
 
+```{r eval=FALSE}
+install.packages("devtools")
+library(devtools)
+install_github("johndharrison/binman")
+install_github("johndharrison/wdman")
+install_github("ropensci/RSelenium", force=TRUE)
 
+```
+
+小地域統計をRSeleniumでダウンロードする. サーバを立ち上げようとすると, JAVAを
+いれろって怒られるので保留. やりたくなったらやる. 
+
+```{r}
+# chromeのドライバとSeleniumサーバの準備
+# wdman::selenium(retcommand = TRUE)
+```
 
 
 

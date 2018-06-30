@@ -1,0 +1,262 @@
+---
+title: "ggplot2によるデータ可視化"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        highlight: tango
+        theme: flatly
+        css: mycss.css
+        code_folding: hide
+        include:
+            - in_header: in_head.html
+---
+
+```{r setup, message=FALSE}
+libs <- c("bench", "tidyverse", "yaml", "rvest")
+for (lib in libs) 
+  require(lib, character.only = TRUE)
+config <- read_yaml( "config.yaml" )
+```
+
+# ggplot2を用いた可視化
+
+```{r}
+# 下地
+g <- ggplot()
+
+# ヒストグラム
+# binの大きさは自動で設定してくれる
+ggplot() + 
+  geom_histogram(data = mpg, mapping = aes(x = displ))
+
+# 密度分布
+# geom_densityで描くとキレイではないので, lineでstatをdensityにする
+ggplot(mpg) + 
+  geom_line(mapping = aes(x = displ), stat = "density")
+
+```
+
+色を分けたい場合には変数を因子型として離散変数と見なされる
+ように配慮する
+
+
+```{r}
+mpg %>%
+  mutate(cyl_fct = factor(cyl, levels = 4:8, order = TRUE)) %>%
+  ggplot(mapping = aes(x = displ, y = cty, group = cyl_fct, colour = cyl_fct)) + 
+  geom_point()
+```
+
+
+```{r}
+# グループ化することで近似曲線も描ける
+
+mpg %>%
+  mutate(cyl_fct = factor(cyl, levels = 4:8, order = TRUE)) %>%
+  ggplot(mapping = aes(x = displ, y = cty, group = cyl_fct, colour = cyl_fct)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+
+```
+
+
+```{r}
+# こんな絵も記述できる
+ggplot(data=mpg, mapping = aes(x = displ, y = cty)) + 
+  geom_point(colour = "chocolate", shape = 35, size = 10) + 
+  geom_smooth(method = "lm", linetype = "dashed", se = FALSE)
+
+```
+
+## annotate
+
+データセットではないが, 簡易的に, つまりはベクトルで
+データを追加したい場合にはannotateを使う. 
+
+
+```{r}
+add_x <- c(2.5, 3, 3.5)
+add_y <- c(25, 27.5, 30)
+
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) + 
+  geom_point() + 
+  annotate(geom = "point", x = add_x, y = add_y, colour = "red") + 
+  annotate(geom = "text", x = c(5, 5), y = c(30, 25), label = c("要チェック", "赤色のデータを追加"))
+
+
+```
+
+## 統計処理
+
+x軸が離散変数の場合. 
+
+```{r}
+mean_cty <- 
+  mpg %>% 
+  group_by(class) %>% 
+  summarise(cty = mean(cty))
+
+ggplot(mean_cty, aes(class, cty)) +
+  geom_bar(stat = "identity")
+
+ggplot(mpg, aes(class, cty)) +
+  geom_bar(stat = "summary", fun.y = "mean")
+```
+
+要約統計量を知る. 関数はオリジナルでも大丈夫のよう. 
+
+```{r}
+q10 <- partial(quantile, prob = .1)
+q90 <- partial(quantile, prob = .9)
+mpg %>%
+  ggplot(mapping = aes(x = class, y = cty)) + 
+  stat_summary(geom = "pointrange", fun.y = "mean", fun.ymax = "max", fun.ymin = "min") + 
+  stat_summary(geom = "pointrange", fun.y = "median", fun.ymax = "q90", fun.ymin = "q10", colour ="red")
+```
+
+
+ヴァイオリンプロットは面積に情報を持たせることができる. 
+このグラフを見ると, 点が重なってしまっていることがわかる. 
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) + 
+  geom_violin(scale = "count") + 
+  geom_point(mapping = aes(colour = class), show.legend = FALSE)
+```
+
+
+jitterで点の重なりを避ける. 
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty)) + 
+  stat_summary(geom = "bar", fun.y = "mean") + 
+  geom_jitter(mapping = aes(colour = class), width = .4, height = .0, show.legend = FALSE)
+```
+
+
+## position
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = cty, fill = factor(year)))+
+stat_summary(geom = "bar", fun.y = "mean")+
+stat_summary(fun.data = "mean_se")
+# 中央：position = "stack"
+ggplot(data = mpg, mapping = aes(x = class, y = cty, fill = factor(year)))+
+geom_bar(stat = "summary", fun.y = "mean")+
+stat_summary(fun.data = "mean_se")
+# 右図：position = "dodge"
+ggplot(data = mpg, mapping = aes(x = class, y = cty, fill = factor(year)))+
+stat_summary(geom = "bar", fun.y = "mean", position = position_dodge())+
+stat_summary(fun.data = "mean_se", position = position_dodge(width = 0.9))
+```
+
+## 特定の範囲を拡大表示
+
+coord_cartesianを使う. 
+
+
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+geom_point() +
+geom_vline(xintercept = 4) +
+geom_hline(yintercept = 15) +
+geom_smooth(method = "lm", se = FALSE)
+# 右図：X軸、Y軸の特定の範囲を拡大表示した場合
+ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+geom_point() +
+coord_cartesian(xlim = c(1.5, 4.5), ylim = c(10, 35)) +
+geom_vline(xintercept = 4) +
+geom_hline(yintercept = 15) +
+geom_smooth(method = "lm", se = FALSE)
+```
+
+
+# 他社と共有可能な状態に仕上げる
+
+themeで頑張れる. themeをどのように使うのかは, theme_bw()の中身や結果を
+確かめながらやる. 
+
+```{r}
+# 関数としてのtheme
+theme_bw
+```
+
+
+## 配色を自分で決める
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = drv, y = cty, fill = drv)) +
+geom_boxplot() +
+scale_fill_manual(values = c("4" = "black", "f" = "grey", "r" = "#ffffff"))
+```
+
+
+
+## ラベルを変更する
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = cty, group = factor(cyl), colour = factor(cyl))) +
+  geom_point() + 
+  labs(
+    title = "エンジンの大きさと市街地における燃費の関係",
+    subtitle = "1999年と2008年のデータを用いて", 
+    caption  = "出典:xxx",
+    x = "エンジンの大きさ(L)",
+    y = "市街地における燃費(mpg)", 
+    colour = "シリンダー数"
+  ) + 
+  theme_light(base_size = 18)
+```
+
+## GUI
+
+GUIベースでggplotやPlotyの設定できるのでとても便利. 
+またはRStudioのアドインである[ggThemeAssist](https://github.com/calligross/ggthemeassist)を使えばよいらしい. 
+
+```{r eval = FALSE}
+library(ggplotgui)
+ggplot_shiny(data = mpg)
+```
+
+
+
+ggplotオブジェクトを渡して, Plotlyを起動させることもできる. 
+(著者の方に確認中)
+
+
+
+## 複数のグラフを並べる
+
+- gridExtra::grid.arrange
+- cowplot::plot_grid
+- ggpubr::ggarrange
+
+```{r }
+
+library(ggpubr)
+g1 <- ggplot(data = mpg, mapping = aes(x = displ, y = cty)) +
+theme_classic() +
+geom_point(colour = "seagreen")
+g2 <- ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) +
+theme_classic() +
+geom_point(colour = "lightskyblue")
+ggarrange(g1, g2, labels = c("市街地", "高速道路"), ncol = 2, hjust = -1.5)
+
+
+
+```
+
+## 色に配慮する
+
+
+```{r}
+library(ggthemes)
+ggplot(data = mpg, mapping = aes(x = class, y = cty, fill = class)) +
+ geom_boxplot(show.legend = TRUE) + 
+ scale_fill_colorblind()
+```
+
+
+
