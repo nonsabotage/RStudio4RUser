@@ -24,12 +24,11 @@ p {
     margin-top: 1em;
 }
 
-
 ul, ol, p {
     font-family:游ゴシック,"游明朝", "HG明朝E",'Source Code Pro',sans-serif;;
     font-size: 21px;
     line-height: 1.6;
-    padding-left: 5px;
+    padding-left: 15px;
 }
 ul, ol {
   color: #1256A4;
@@ -57,10 +56,8 @@ h1 {
     padding: 0.5em;
     margin-top: 3em;
     margin-bottom: 0.5em;
-    border-left: solid 5px #1256A4;
-    color: white;
-    background-color: #888888;
-
+    border-bottom: solid 5px #1256A4;
+    color: #1256A4;
 }
 h1.title {
   text-align: center;
@@ -70,27 +67,22 @@ h1.title {
   border: solid 0px white;
 }
 h2 {
-  border-bottom:#1253A4 2px solid;
+  border-left:#1253A4 3px solid;
   padding:10px;
+  padding-left:15px;
   padding-bottom: 0.5em;
   margin-bottom: 0.5em;
   margin-top: 1.5em;
   font-size: 28px;
-  font-weight: bold;
+  color: #1256A4;
 }
-
 h3 {
     padding-bottom: 0.5em;
     padding-top: 0.5em;
     padding-left: 15px;
-    border-left: 2px solid #1253A4;
     margin-top: 1.5em;
     margin-bottom: 0.5em;
-}
-h4 {
-    margin-top: 2em;
-    padding-left:10px;
-    color: black;
+    color: #1256A4;
 }
 li.ist-group-iteml.active {
   background-color: #1256A4;

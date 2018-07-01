@@ -141,11 +141,11 @@ dplyrの関数では一見すべてが同じ記法で記述できるようにみ
 ある. 
 
 
-#### mutateのセマンティクス
+### mutateのセマンティクス
 mutate(), transmute(), filter(), summarise(), arrange(), 
 group_by(), distinct()
 
-#### selectのセマンティクス
+### selectのセマンティクス
 select(), rename(), pull(), gather()
 
 
