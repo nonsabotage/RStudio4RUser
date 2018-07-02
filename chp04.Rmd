@@ -223,8 +223,20 @@ ggplot_shiny(data = mpg)
 
 
 
-ggplotオブジェクトを渡して, Plotlyを起動させることもできる. 
-(著者の方に確認中)
+
+```{r}
+
+# ggplotオブジェクトを渡して, Plotlyを起動させることもできる. 
+library(plotly)
+
+g <- ggplot(data = mpg, mapping = aes(x = class, y = displ, colour =
+class)) +
+  theme_bw() +
+  geom_violin() +
+  geom_jitter(size = 1, alpha = 0.5, width = 0.25, colour = "black")
+
+ggplotly(p = g)
+```
 
 
 
